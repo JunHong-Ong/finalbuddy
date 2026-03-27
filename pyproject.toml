@@ -1,0 +1,19 @@
+[project]
+name = "bookbuddy"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv.workspace]
+members = [
+    "shared/models",
+    "services/ingestion-service",
+    "services/processing-service",
+    "services/extraction-service",
+    "services/inference-service",
+    "services/graph-service",
+    "services/query-service",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
