@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from graph.config import settings
 from graph.db import close_driver, get_driver
-from graph.routers import health
+from graph.routers import documents, health
 
 
 @asynccontextmanager
@@ -17,6 +17,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="graph-service", lifespan=lifespan)
 app.include_router(health.router)
+app.include_router(documents.router)
 
 
 def main():
