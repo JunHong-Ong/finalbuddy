@@ -2,7 +2,14 @@
 name = "inference-service"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "fastapi[standard]>=0.135.2",
+    "openai>=2.30.0",
+    "pydantic-settings>=2.13.1",
+]
+
+[project.scripts]
+inference-service = "inference.main:main"
 
 [build-system]
 requires = ["hatchling"]
