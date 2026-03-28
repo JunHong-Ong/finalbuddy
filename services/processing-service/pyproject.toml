@@ -5,7 +5,14 @@ requires-python = ">=3.12"
 dependencies = [
     "bookbuddy-models",
     "inference-service",
+    "fastapi[standard]>=0.135.2",
+    "pydantic-settings>=2.13.1",
+    "langchain-text-splitters>=1.1.1",
+    "transformers>=5.4.0",
 ]
+
+[project.scripts]
+processing-service = "processing.main:main"
 
 [tool.uv.sources]
 bookbuddy-models = { workspace = true }
