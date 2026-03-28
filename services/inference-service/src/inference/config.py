@@ -21,6 +21,5 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-EMBEDDING_MODEL = "all-minilm"
 GENERATION_MODEL = "gemma3:1b"
 GENERATION_PROMPT = "chat"

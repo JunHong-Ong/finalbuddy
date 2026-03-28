@@ -17,3 +17,5 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"

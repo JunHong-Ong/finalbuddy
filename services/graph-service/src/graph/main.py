@@ -5,11 +5,13 @@ from fastapi import FastAPI
 
 from graph.config import settings
 from graph.db import close_driver, get_driver
+from graph.embedder import load_embedder
 from graph.routers import documents, health
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_embedder()
     await get_driver()
     yield
     await close_driver()

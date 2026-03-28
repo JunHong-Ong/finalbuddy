@@ -14,11 +14,10 @@ Accepts raw file uploads (PDF, DOCX, PPTX, plain text) and converts them into a 
 ---
 
 ### `processing-service`
-Prepares the content for graph storage and LLM use. Splits documents into semantically coherent chunks, generates vector embeddings, and applies cleaning/normalisation passes.
+Prepares the content for graph storage and LLM use. Splits documents into semantically coherent chunks and applies cleaning/normalisation passes.
 
 **Key responsibilities:**
 - Text chunking (sentence-aware, overlap-preserving)
-- Embedding generation (calls `inference-service`)
 - Text cleaning and deduplication
 
 ---
@@ -77,7 +76,7 @@ bookbuddy/
 │   │   ├── src/
 │   │   ├── tests/
 │   │   └── Dockerfile
-│   ├── processing-service/      # Document → Chunks + Embeddings
+│   ├── processing-service/      # Document → Chunks
 │   │   ├── src/
 │   │   ├── tests/
 │   │   └── Dockerfile

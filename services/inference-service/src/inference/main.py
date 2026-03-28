@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from inference.client import close_client, get_client
 from inference.config import settings
-from inference.routers import embeddings, generation, health
+from inference.routers import generation, health
 
 
 @asynccontextmanager
@@ -17,7 +17,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="inference-service", lifespan=lifespan)
 app.include_router(health.router)
-app.include_router(embeddings.router)
 app.include_router(generation.router)
 
 
