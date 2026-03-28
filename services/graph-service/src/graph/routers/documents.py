@@ -17,10 +17,15 @@ async def create_document(document: Document) -> UUID:
         async with driver.session() as session:
             await session.run(
                 """
-                MERGE (d:Document {id: $id})
-                SET d += $props
+                MERGE (d:Document {content_hash: $content_hash})
+                ON CREATE SET
+                    d.id = $props.id,
+                    d.created_at = datetime(),
+                    d.file_type = $props.file_type
+                ON MATCH SET
+                    d.updated_at = datetime()
                 """,
-                id=data["id"],
+                id=data["content_hash"],
                 props=data,
             )
     except Neo4jError as e:
