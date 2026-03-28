@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,7 +16,11 @@ class Settings(BaseSettings):
     inference_host: str
     inference_port: int
 
+    prompts_dir: Path = Path("prompts")
+
 
 settings = Settings()
 
 EMBEDDING_MODEL = "all-minilm"
+GENERATION_MODEL = "gemma3:1b"
+GENERATION_PROMPT = "chat"
