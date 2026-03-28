@@ -1,3 +1,3 @@
-from bookbuddy_models.document import Document
+from bookbuddy_models.document import Document, Element, Segment
 
-__all__ = ["Document"]
+__all__ = ["Document", "Element", "Segment"]
