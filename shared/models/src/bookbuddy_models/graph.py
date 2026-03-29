@@ -28,7 +28,36 @@ class AliasNode(BaseNode):
 
 
 class DocumentNode(BaseDocument):
+    """
+    Represents an ingested document in the knowledge graph.
+
+    (:DocumentNode)-[:HAS_SEGMENT]->(:SegmentNode)
+    """
+
     status: str
+
+
+class SegmentNode(BaseNode):
+    """
+    Represents a logical container within a document — e.g. a page, chapter,
+    slide, or time window.  Corresponds to a parsed Segment produced by the
+    ingestion pipeline.
+
+    (:SegmentNode)-[:HAS_CHUNK]->(:ChunkNode)
+    """
+
+    index: int
+
+
+class ChunkNode(BaseNode):
+    """
+    Represents a text chunk produced by the recursive chunker.  A chunk
+    stitches together one or more Elements from a Segment into a contiguous
+    passage suitable for embedding and retrieval.
+    """
+
+    chunk_index: int
+    text: str
 
 
 # ---------------------------------------------------------------------------
