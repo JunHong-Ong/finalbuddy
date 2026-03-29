@@ -7,7 +7,7 @@ from bookbuddy_models.base import BaseDocument, BaseSegment
 
 
 class BaseNode(BaseModel):
-    id: UUID
+    uuid: UUID
     created_at: datetime
     updated_at: datetime
 
@@ -105,14 +105,12 @@ class Topic(OpenAlexNode):
     """
 
 
-class Keyword(BaseModel):
+class Keyword(OpenAlexNode):
     """
     Keyword attached to a Topic.
 
     (:Keyword)-[:DESCRIBES]->(:Topic)
     """
-    id: UUID
-    display_name: str
 
 
 # ---------------------------------------------------------------------------
