@@ -58,7 +58,9 @@ def iter_records(directory: Path, glob: str) -> tuple[list[dict], list[str]]:
                 try:
                     record = flatten(json.loads(line))
                 except json.JSONDecodeError as exc:
-                    print(f"    WARNING: skipping malformed line — {exc}", file=sys.stderr)
+                    print(
+                        f"    WARNING: skipping malformed line — {exc}", file=sys.stderr
+                    )
                     continue
 
                 # Track column order by first appearance

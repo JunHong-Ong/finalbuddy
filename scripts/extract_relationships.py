@@ -32,10 +32,10 @@ import json
 import sys
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _get_nested(obj: dict, dotted_key: str):
     """Resolve a dot-separated key path from a dict. Returns None if missing."""
@@ -74,6 +74,7 @@ def _flatten_item(obj, prefix: str = "target") -> dict[str, str]:
 # ---------------------------------------------------------------------------
 # Core
 # ---------------------------------------------------------------------------
+
 
 def extract_relationships(
     directory: str | Path,
@@ -138,7 +139,9 @@ def extract_relationships(
                 try:
                     record = json.loads(line)
                 except json.JSONDecodeError as exc:
-                    print(f"    WARNING: skipping malformed line — {exc}", file=sys.stderr)
+                    print(
+                        f"    WARNING: skipping malformed line — {exc}", file=sys.stderr
+                    )
                     continue
 
                 source_value = _get_nested(record, source_col)
@@ -164,11 +167,20 @@ def extract_relationships(
                     rows.append(row)
 
     if skipped_no_source:
-        print(f"  Skipped {skipped_no_source} record(s) — source column '{source_col}' missing.")
+        print(
+            f"  Skipped {skipped_no_source} record(s) — "
+            "source column '{source_col}' missing."
+        )
     if skipped_no_target:
-        print(f"  Skipped {skipped_no_target} record(s) — target column '{target_col}' missing.")
+        print(
+            f"  Skipped {skipped_no_target} record(s) — "
+            "target column '{target_col}' missing."
+        )
     if skipped_not_list:
-        print(f"  Skipped {skipped_not_list} record(s) — target column '{target_col}' is not a list.")
+        print(
+            f"  Skipped {skipped_not_list} record(s) — "
+            "target column '{target_col}' is not a list."
+        )
 
     if not rows:
         print("No relationship rows produced.", file=sys.stderr)
@@ -192,11 +204,12 @@ def extract_relationships(
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Extract entity relationships from OpenAlex NDJSON files into a CSV."
+        description="Extract entity relationships from OpenAlex JSON files into a CSV."
     )
-    parser.add_argument("directory", help="Directory containing NDJSON part files")
+    parser.add_argument("directory", help="Directory containing JSON part files")
     parser.add_argument("output", help="Output CSV file path")
     parser.add_argument(
         "--source-col",
