@@ -14,6 +14,16 @@ class Settings(BaseSettings):
     ingestion_host: str
     ingestion_port: int
 
+    graph_host: str
+    graph_port: int
+
+    staging_dir: str = "/tmp/bookbuddy/staging"
+    poll_interval: int = 5
+
+    @property
+    def graph_service_url(self) -> str:
+        return f"http://{self.graph_host}:{self.graph_port}"
+
 
 settings = Settings()
 

@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from bookbuddy_models.base import BaseDocument
+
 
 class BaseNode(BaseModel):
     id: UUID
@@ -18,6 +20,15 @@ class AliasNode(BaseNode):
     """
 
     disply_name: str
+
+
+# ---------------------------------------------------------------------------
+# Document related nodes
+# ---------------------------------------------------------------------------
+
+
+class DocumentNode(BaseDocument):
+    status: str
 
 
 # ---------------------------------------------------------------------------
