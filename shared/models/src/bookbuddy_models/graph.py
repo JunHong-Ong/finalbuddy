@@ -55,6 +55,7 @@ class ChunkNode(BaseNode):
     """
 
     chunk_index: int
+    processed: bool
     text: str
 
 

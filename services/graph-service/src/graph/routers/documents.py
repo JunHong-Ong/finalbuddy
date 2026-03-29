@@ -220,6 +220,7 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
                   ON CREATE SET
                       c.chunk_index = ch.chunk_index,
                       c.text        = ch.text,
+                      c.processed   = false,
                       c.created_at  = datetime(),
                       c.updated_at  = datetime()
                   WITH c, ch
