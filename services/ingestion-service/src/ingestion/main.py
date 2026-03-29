@@ -11,14 +11,16 @@ from bookbuddy_models.graph import DocumentNode
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
+from .chunkers.recursive import RecursiveChunker
 from .config import settings
 from .factory import ParserFactory
+from .graph import build_segment_payloads
 
 logger = logging.getLogger(__name__)
 
 
 async def poll_queued_documents(
-    client: httpx.AsyncClient, factory: ParserFactory
+    client: httpx.AsyncClient, factory: ParserFactory, chunker: RecursiveChunker
 ) -> None:
     while True:
         await asyncio.sleep(settings.poll_interval)
@@ -41,11 +43,24 @@ async def poll_queued_documents(
                 )
 
                 try:
-                    factory.parse(staged_path.read_bytes(), file_type)
+                    document = factory.parse(staged_path.read_bytes(), file_type)
                     staged_path.unlink()
-                    logger.info("Parsed document %s", doc_id)
+
+                    chunks = chunker.chunk(document)
+
+                    payloads = build_segment_payloads(document, chunks)
+                    resp = await client.post(
+                        f"/documents/{doc_id}/segments", json=payloads
+                    )
+                    resp.raise_for_status()
+
+                    await client.patch(
+                        f"/documents/{doc_id}",
+                        json={"status": "SUCCEEDED"},
+                    )
+                    logger.info("Processed document %s: %d chunks", doc_id, len(chunks))
                 except Exception:
-                    logger.exception("Failed to parse document %s", doc_id)
+                    logger.exception("Failed to process document %s", doc_id)
                     await client.patch(
                         f"/documents/{doc_id}",
                         json={"status": "FAILED"},
@@ -60,10 +75,11 @@ async def poll_queued_documents(
 async def lifespan(app: FastAPI):
     Path(settings.staging_dir).mkdir(parents=True, exist_ok=True)
     factory = ParserFactory()
+    chunker = RecursiveChunker()
 
     async with httpx.AsyncClient(base_url=settings.graph_service_url) as client:
         app.state.http_client = client
-        poll_task = asyncio.create_task(poll_queued_documents(client, factory))
+        poll_task = asyncio.create_task(poll_queued_documents(client, factory, chunker))
         yield
         poll_task.cancel()
         await asyncio.gather(poll_task, return_exceptions=True)

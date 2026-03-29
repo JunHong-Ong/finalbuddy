@@ -10,6 +10,18 @@ from graph.db import get_driver
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
+class ChunkPayload(BaseModel):
+    id: UUID
+    chunk_index: int
+    text: str
+
+
+class SegmentPayload(BaseModel):
+    id: UUID
+    index: int
+    chunks: list[ChunkPayload]
+
+
 class StatusUpdate(BaseModel):
     status: str
 
@@ -112,3 +124,58 @@ async def update_document_status(doc_id: UUID, update: StatusUpdate) -> None:
 
     if record is None:
         raise HTTPException(status_code=404, detail=f"Document {doc_id} not found")
+
+
+@router.post("/{doc_id}/segments", status_code=201)
+async def create_segments(doc_id: UUID, segments: list[SegmentPayload]) -> None:
+    driver = await get_driver()
+    segments_data = [
+        {
+            "id": str(s.id),
+            "index": s.index,
+            "chunks": [
+                {"id": str(c.id), "chunk_index": c.chunk_index, "text": c.text}
+                for c in s.chunks
+            ],
+        }
+        for s in segments
+    ]
+    try:
+        async with driver.session() as session:
+            result = await session.run(
+                "MATCH (d:Document {id: $doc_id}) RETURN d",
+                doc_id=str(doc_id),
+            )
+            record = await result.single()
+            if record is None:
+                raise HTTPException(
+                    status_code=404, detail=f"Document {doc_id} not found"
+                )
+
+            await session.run(
+                """
+                MATCH (d:Document {id: $doc_id})
+                UNWIND $segments AS seg
+                  MERGE (s:Segment {id: seg.id})
+                  ON CREATE SET
+                      s.index      = seg.index,
+                      s.created_at = datetime(),
+                      s.updated_at = datetime()
+                  MERGE (d)-[:HAS_SEGMENT]->(s)
+                  WITH s, seg
+                  UNWIND seg.chunks AS ch
+                    MERGE (c:Chunk {id: ch.id})
+                    ON CREATE SET
+                        c.chunk_index = ch.chunk_index,
+                        c.text        = ch.text,
+                        c.created_at  = datetime(),
+                        c.updated_at  = datetime()
+                    MERGE (s)-[:HAS_CHUNK]->(c)
+                """,
+                doc_id=str(doc_id),
+                segments=segments_data,
+            )
+    except HTTPException:
+        raise
+    except Neo4jError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create segments: {e}")

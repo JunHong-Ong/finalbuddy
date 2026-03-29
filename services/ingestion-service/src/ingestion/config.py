@@ -30,3 +30,7 @@ settings = Settings()
 PARSER_REGISTRY: dict[str, type[BaseParser]] = {
     "pdf": PDFParser,
 }
+
+CHUNK_SIZE = 512
+CHUNK_OVERLAP = 64
+TOKENIZER_MODEL = "google/gemma-3-1b-it"
