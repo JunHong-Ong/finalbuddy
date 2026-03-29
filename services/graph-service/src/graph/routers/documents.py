@@ -10,16 +10,20 @@ from graph.db import get_driver
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-class ChunkPayload(BaseModel):
+class SegmentNodePayload(BaseModel):
+    id: UUID
+    index: int
+    level: int
+    next_segment_id: UUID | None
+    parent_segment_id: UUID | None
+
+
+class ChunkNodePayload(BaseModel):
     id: UUID
     chunk_index: int
     text: str
-
-
-class SegmentPayload(BaseModel):
-    id: UUID
-    index: int
-    chunks: list[ChunkPayload]
+    segment_id: UUID
+    next_chunk_id: UUID | None
 
 
 class StatusUpdate(BaseModel):
@@ -127,16 +131,17 @@ async def update_document_status(doc_id: UUID, update: StatusUpdate) -> None:
 
 
 @router.post("/{doc_id}/segments", status_code=201)
-async def create_segments(doc_id: UUID, segments: list[SegmentPayload]) -> None:
+async def create_segments(doc_id: UUID, segments: list[SegmentNodePayload]) -> None:
     driver = await get_driver()
     segments_data = [
         {
             "id": str(s.id),
             "index": s.index,
-            "chunks": [
-                {"id": str(c.id), "chunk_index": c.chunk_index, "text": c.text}
-                for c in s.chunks
-            ],
+            "level": s.level,
+            "next_segment_id": str(s.next_segment_id) if s.next_segment_id else None,
+            "parent_segment_id": str(s.parent_segment_id)
+            if s.parent_segment_id
+            else None,
         }
         for s in segments
     ]
@@ -159,23 +164,79 @@ async def create_segments(doc_id: UUID, segments: list[SegmentPayload]) -> None:
                   MERGE (s:Segment {id: seg.id})
                   ON CREATE SET
                       s.index      = seg.index,
+                      s.level      = seg.level,
                       s.created_at = datetime(),
                       s.updated_at = datetime()
                   MERGE (d)-[:HAS_SEGMENT]->(s)
-                  WITH s, seg
-                  UNWIND seg.chunks AS ch
-                    MERGE (c:Chunk {id: ch.id})
-                    ON CREATE SET
-                        c.chunk_index = ch.chunk_index,
-                        c.text        = ch.text,
-                        c.created_at  = datetime(),
-                        c.updated_at  = datetime()
-                    MERGE (s)-[:HAS_CHUNK]->(c)
                 """,
                 doc_id=str(doc_id),
+                segments=segments_data,
+            )
+            await session.run(
+                """
+                UNWIND $segments AS seg
+                WITH seg WHERE seg.next_segment_id IS NOT NULL
+                MATCH (s1:Segment {id: seg.id})
+                MATCH (s2:Segment {id: seg.next_segment_id})
+                MERGE (s1)-[:NEXT]->(s2)
+                """,
+                segments=segments_data,
+            )
+            await session.run(
+                """
+                UNWIND $segments AS seg
+                WITH seg WHERE seg.parent_segment_id IS NOT NULL
+                MATCH (child:Segment  {id: seg.id})
+                MATCH (parent:Segment {id: seg.parent_segment_id})
+                MERGE (parent)-[:CONTAINS]->(child)
+                """,
                 segments=segments_data,
             )
     except HTTPException:
         raise
     except Neo4jError as e:
         raise HTTPException(status_code=500, detail=f"Failed to create segments: {e}")
+
+
+@router.post("/{doc_id}/chunks", status_code=201)
+async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
+    driver = await get_driver()
+    chunks_data = [
+        {
+            "id": str(c.id),
+            "chunk_index": c.chunk_index,
+            "text": c.text,
+            "segment_id": str(c.segment_id),
+            "next_chunk_id": str(c.next_chunk_id) if c.next_chunk_id else None,
+        }
+        for c in chunks
+    ]
+    try:
+        async with driver.session() as session:
+            await session.run(
+                """
+                UNWIND $chunks AS ch
+                  MERGE (c:Chunk {id: ch.id})
+                  ON CREATE SET
+                      c.chunk_index = ch.chunk_index,
+                      c.text        = ch.text,
+                      c.created_at  = datetime(),
+                      c.updated_at  = datetime()
+                  WITH c, ch
+                  MATCH (s:Segment {id: ch.segment_id})
+                  MERGE (s)-[:HAS_CHUNK]->(c)
+                """,
+                chunks=chunks_data,
+            )
+            await session.run(
+                """
+                UNWIND $chunks AS ch
+                WITH ch WHERE ch.next_chunk_id IS NOT NULL
+                MATCH (c1:Chunk {id: ch.id})
+                MATCH (c2:Chunk {id: ch.next_chunk_id})
+                MERGE (c1)-[:NEXT]->(c2)
+                """,
+                chunks=chunks_data,
+            )
+    except Neo4jError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create chunks: {e}")

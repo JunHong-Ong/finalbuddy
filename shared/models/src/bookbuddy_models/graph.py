@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-from bookbuddy_models.base import BaseDocument
+from bookbuddy_models.base import BaseDocument, BaseSegment
 
 
 class BaseNode(BaseModel):
@@ -37,7 +37,7 @@ class DocumentNode(BaseDocument):
     status: str
 
 
-class SegmentNode(BaseNode):
+class SegmentNode(BaseSegment):
     """
     Represents a logical container within a document — e.g. a page, chapter,
     slide, or time window.  Corresponds to a parsed Segment produced by the
@@ -45,8 +45,6 @@ class SegmentNode(BaseNode):
 
     (:SegmentNode)-[:HAS_CHUNK]->(:ChunkNode)
     """
-
-    index: int
 
 
 class ChunkNode(BaseNode):

@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from .chunkers.recursive import RecursiveChunker
 from .config import settings
 from .factory import ParserFactory
-from .graph import build_segment_payloads
+from .graph import build_chunk_nodes_payload, build_segment_nodes_payload
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +48,15 @@ async def poll_queued_documents(
 
                     chunks = chunker.chunk(document)
 
-                    payloads = build_segment_payloads(document, chunks)
+                    segment_payloads = build_segment_nodes_payload(document)
                     resp = await client.post(
-                        f"/documents/{doc_id}/segments", json=payloads
+                        f"/documents/{doc_id}/segments", json=segment_payloads
+                    )
+                    resp.raise_for_status()
+
+                    chunk_payloads = build_chunk_nodes_payload(document, chunks)
+                    resp = await client.post(
+                        f"/documents/{doc_id}/chunks", json=chunk_payloads
                     )
                     resp.raise_for_status()
 

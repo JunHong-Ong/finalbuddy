@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from bookbuddy_models.base import BaseDocument
+from bookbuddy_models.base import BaseDocument, BaseSegment
 
 
 class Element(BaseModel):
@@ -9,8 +9,7 @@ class Element(BaseModel):
     order: int
 
 
-class Segment(BaseModel):
-    index: int
+class Segment(BaseSegment):
     elements: list[Element]
 
 

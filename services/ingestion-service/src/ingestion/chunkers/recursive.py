@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from bookbuddy_models import Chunk, Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from transformers import AutoTokenizer
@@ -16,38 +18,30 @@ _splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
 
 
 class RecursiveChunker(BaseChunker):
-    def split(self, document: Document) -> list[tuple[str, list[str]]]:
-        results: list[tuple[str, list[str]]] = []
-        current_section = ""
-        accumulated: list[str] = []
-
-        def flush() -> None:
-            if accumulated:
-                text = "\n".join(accumulated)
-                chunks = _splitter.split_text(text)
-                if chunks:
-                    results.append((current_section, chunks))
-                accumulated.clear()
+    def split(self, document: Document) -> list[tuple[UUID, list[str]]]:
+        results: list[tuple[UUID, list[str]]] = []
 
         for segment in document.segments:
-            for element in sorted(segment.elements, key=lambda e: e.order):
-                if element.type == "section":
-                    flush()
-                    current_section = element.content
-                elif element.type == "text":
-                    accumulated.append(element.content)
+            text_parts = [
+                element.content
+                for element in sorted(segment.elements, key=lambda e: e.order)
+                if element.type == "text"
+            ]
+            if text_parts:
+                chunks = _splitter.split_text("\n".join(text_parts))
+                if chunks:
+                    results.append((segment.id, chunks))
 
-        flush()
         return results
 
-    def map(self, document: Document, raw: list[tuple[str, list[str]]]) -> list[Chunk]:
+    def map(self, document: Document, raw: list[tuple[UUID, list[str]]]) -> list[Chunk]:
         chunks: list[Chunk] = []
-        for section_title, texts in raw:
+        for segment_id, texts in raw:
             for index, text in enumerate(texts):
                 chunks.append(
                     Chunk(
                         document_id=document.id,
-                        section_title=section_title,
+                        segment_id=segment_id,
                         chunk_index=index,
                         text=text,
                     )

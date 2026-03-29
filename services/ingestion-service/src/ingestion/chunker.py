@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from uuid import UUID
 
 from bookbuddy_models import Chunk, Document
 
@@ -9,19 +10,18 @@ class BaseChunker(ABC):
         return self.map(document, raw)
 
     @abstractmethod
-    def split(self, document: Document) -> list[tuple[str, list[str]]]:
+    def split(self, document: Document) -> list[tuple[UUID, list[str]]]:
         """
-        Walk the document's elements, group text by section, and split each
-        group into chunks.
+        Walk the document's segments, split each segment's text into chunks.
 
-        Returns a list of (section_title, chunk_texts) pairs.
+        Returns a list of (segment_id, chunk_texts) pairs.
         """
         pass
 
     @abstractmethod
-    def map(self, document: Document, raw: list[tuple[str, list[str]]]) -> list[Chunk]:
+    def map(self, document: Document, raw: list[tuple[UUID, list[str]]]) -> list[Chunk]:
         """
-        Convert (section_title, chunk_texts) pairs into Chunk model instances.
-        chunk_index resets to 0 at the start of each section.
+        Convert (segment_id, chunk_texts) pairs into Chunk model instances.
+        chunk_index resets to 0 at the start of each segment.
         """
         pass

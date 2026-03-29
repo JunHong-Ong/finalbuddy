@@ -6,6 +6,6 @@ from pydantic import BaseModel, Field
 class Chunk(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     document_id: UUID
-    section_title: str
+    segment_id: UUID
     chunk_index: int
     text: str
