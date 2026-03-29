@@ -635,12 +635,16 @@ version = "0.1.0"
 source = { editable = "services/ingestion-service" }
 dependencies = [
     { name = "bookbuddy-models" },
+    { name = "fastapi", extra = ["standard"] },
+    { name = "pydantic-settings" },
     { name = "pymupdf" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "bookbuddy-models", editable = "shared/models" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.135.2" },
+    { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "pymupdf", specifier = ">=1.27.2.2" },
 ]
 
