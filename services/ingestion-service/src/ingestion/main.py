@@ -29,7 +29,7 @@ async def poll_queued_documents(
             response.raise_for_status()
 
             for node_data in response.json():
-                doc_id = UUID(node_data["id"])
+                doc_id = UUID(node_data["uuid"])
                 file_type = node_data["file_type"]
 
                 staged_path = Path(settings.staging_dir) / f"{doc_id}.{file_type}"
@@ -95,7 +95,7 @@ app = FastAPI(title="Ingestion Service", lifespan=lifespan)
 
 
 class IngestResponse(BaseModel):
-    id: UUID
+    uuid: UUID
 
 
 @app.post("/ingest", response_model=IngestResponse)
@@ -108,7 +108,7 @@ async def ingest(file: UploadFile = File(...)) -> IngestResponse:
     content_hash = hashlib.sha256(data).hexdigest()
 
     document_node = DocumentNode(
-        id=uuid4(),
+        uuid=uuid4(),
         content_hash=content_hash,
         file_type=ext,
         status="QUEUED",
@@ -121,10 +121,10 @@ async def ingest(file: UploadFile = File(...)) -> IngestResponse:
     )
     response.raise_for_status()
 
-    staged_path = Path(settings.staging_dir) / f"{document_node.id}.{ext}"
+    staged_path = Path(settings.staging_dir) / f"{document_node.uuid}.{ext}"
     staged_path.write_bytes(data)
 
-    return IngestResponse(id=document_node.id)
+    return IngestResponse(id=document_node.uuid)
 
 
 def main():

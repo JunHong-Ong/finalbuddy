@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class Chunk(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
+    uuid: UUID = Field(default_factory=uuid4)
     document_id: UUID
     segment_id: UUID
     chunk_index: int

@@ -12,7 +12,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 
 class SegmentNodePayload(BaseModel):
-    id: UUID
+    uuid: UUID
     index: int
     level: int
     next_segment_id: UUID | None
@@ -20,7 +20,7 @@ class SegmentNodePayload(BaseModel):
 
 
 class ChunkNodePayload(BaseModel):
-    id: UUID
+    uuid: UUID
     chunk_index: int
     text: str
     segment_id: UUID
@@ -41,7 +41,7 @@ async def create_document(document: DocumentNode) -> UUID:
                 """
                 MERGE (d:Document {content_hash: $content_hash})
                 ON CREATE SET
-                    d.id = $id,
+                    d.uuid = $uuid,
                     d.file_type = $file_type,
                     d.status = $status,
                     d.created_at = datetime(),
@@ -51,13 +51,13 @@ async def create_document(document: DocumentNode) -> UUID:
                     d.updated_at = datetime()
                 """,
                 content_hash=data["content_hash"],
-                id=str(data["id"]),
+                uuid=str(data["uuid"]),
                 file_type=data["file_type"],
                 status=data["status"],
             )
     except Neo4jError as e:
         raise HTTPException(status_code=500, detail=f"Failed to create document: {e}")
-    return document.id
+    return document.uuid
 
 
 @router.get("")
@@ -79,7 +79,7 @@ async def get_documents(status: str | None = None) -> list[DocumentNode]:
 
     return [
         DocumentNode(
-            id=r["d"]["id"],
+            uuid=r["d"]["uuid"],
             content_hash=r["d"]["content_hash"],
             file_type=r["d"]["file_type"],
             status=r["d"]["status"],
@@ -94,8 +94,8 @@ async def get_document_status(doc_id: UUID) -> str:
     try:
         async with driver.session() as session:
             result = await session.run(
-                "MATCH (d:Document {id: $id}) RETURN d.status AS status",
-                id=str(doc_id),
+                "MATCH (d:Document {uuid: $uuid}) RETURN d.status AS status",
+                uuid=str(doc_id),
             )
             record = await result.single()
     except Neo4jError as e:
@@ -116,11 +116,11 @@ async def update_document_status(doc_id: UUID, update: StatusUpdate) -> None:
         async with driver.session() as session:
             result = await session.run(
                 """
-                MATCH (d:Document {id: $id})
+                MATCH (d:Document {uuid: $uuid})
                 SET d.status = $status, d.updated_at = datetime()
                 RETURN d
                 """,
-                id=str(doc_id),
+                uuid=str(doc_id),
                 status=update.status,
             )
             record = await result.single()
@@ -136,7 +136,7 @@ async def create_segments(doc_id: UUID, segments: list[SegmentNodePayload]) -> N
     driver = await get_driver()
     segments_data = [
         {
-            "id": str(s.id),
+            "uuid": str(s.uuid),
             "index": s.index,
             "level": s.level,
             "next_segment_id": str(s.next_segment_id) if s.next_segment_id else None,
@@ -149,7 +149,7 @@ async def create_segments(doc_id: UUID, segments: list[SegmentNodePayload]) -> N
     try:
         async with driver.session() as session:
             result = await session.run(
-                "MATCH (d:Document {id: $doc_id}) RETURN d",
+                "MATCH (d:Document {uuid: $doc_id}) RETURN d",
                 doc_id=str(doc_id),
             )
             record = await result.single()
@@ -160,9 +160,9 @@ async def create_segments(doc_id: UUID, segments: list[SegmentNodePayload]) -> N
 
             await session.run(
                 """
-                MATCH (d:Document {id: $doc_id})
+                MATCH (d:Document {uuid: $doc_id})
                 UNWIND $segments AS seg
-                  MERGE (s:Segment {id: seg.id})
+                  MERGE (s:Segment {uuid: seg.uuid})
                   ON CREATE SET
                       s.index      = seg.index,
                       s.level      = seg.level,
@@ -177,8 +177,8 @@ async def create_segments(doc_id: UUID, segments: list[SegmentNodePayload]) -> N
                 """
                 UNWIND $segments AS seg
                 WITH seg WHERE seg.next_segment_id IS NOT NULL
-                MATCH (s1:Segment {id: seg.id})
-                MATCH (s2:Segment {id: seg.next_segment_id})
+                MATCH (s1:Segment {uuid: seg.uuid})
+                MATCH (s2:Segment {uuid: seg.next_segment_id})
                 MERGE (s1)-[:NEXT]->(s2)
                 """,
                 segments=segments_data,
@@ -187,8 +187,8 @@ async def create_segments(doc_id: UUID, segments: list[SegmentNodePayload]) -> N
                 """
                 UNWIND $segments AS seg
                 WITH seg WHERE seg.parent_segment_id IS NOT NULL
-                MATCH (child:Segment  {id: seg.id})
-                MATCH (parent:Segment {id: seg.parent_segment_id})
+                MATCH (child:Segment  {uuid: seg.uuid})
+                MATCH (parent:Segment {uuid: seg.parent_segment_id})
                 MERGE (parent)-[:CONTAINS]->(child)
                 """,
                 segments=segments_data,
@@ -204,7 +204,7 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
     driver = await get_driver()
     chunks_data = [
         {
-            "id": str(c.id),
+            "uuid": str(c.uuid),
             "chunk_index": c.chunk_index,
             "text": c.text,
             "embedding": embed(c.text),
@@ -218,7 +218,7 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
             await session.run(
                 """
                 UNWIND $chunks AS ch
-                  MERGE (c:Chunk {id: ch.id})
+                  MERGE (c:Chunk {uuid: ch.uuid})
                   ON CREATE SET
                       c.chunk_index = ch.chunk_index,
                       c.text        = ch.text,
@@ -227,7 +227,7 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
                       c.created_at  = datetime(),
                       c.updated_at  = datetime()
                   WITH c, ch
-                  MATCH (s:Segment {id: ch.segment_id})
+                  MATCH (s:Segment {uuid: ch.segment_id})
                   MERGE (s)-[:HAS_CHUNK]->(c)
                 """,
                 chunks=chunks_data,
@@ -236,8 +236,8 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
                 """
                 UNWIND $chunks AS ch
                 WITH ch WHERE ch.next_chunk_id IS NOT NULL
-                MATCH (c1:Chunk {id: ch.id})
-                MATCH (c2:Chunk {id: ch.next_chunk_id})
+                MATCH (c1:Chunk {uuid: ch.uuid})
+                MATCH (c2:Chunk {uuid: ch.next_chunk_id})
                 MERGE (c1)-[:NEXT]->(c2)
                 """,
                 chunks=chunks_data,

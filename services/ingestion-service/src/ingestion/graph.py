@@ -14,7 +14,7 @@ def build_segment_nodes_payload(document: Document) -> list[dict]:
         segments_by_level.setdefault(seg.level, []).append(seg)
     for level_segs in segments_by_level.values():
         next_segment_by_level[level_segs[0].level] = {
-            seg.id: level_segs[i + 1].id if i + 1 < len(level_segs) else None
+            seg.uuid: level_segs[i + 1].uuid if i + 1 < len(level_segs) else None
             for i, seg in enumerate(level_segs)
         }
 
@@ -22,22 +22,22 @@ def build_segment_nodes_payload(document: Document) -> list[dict]:
     last_at_level: dict[int, UUID] = {}
     parent_segment_id: dict[UUID, UUID | None] = {}
     for seg in segments:
-        parent_segment_id[seg.id] = (
+        parent_segment_id[seg.uuid] = (
             last_at_level.get(seg.level - 1) if seg.level > 0 else None
         )
-        last_at_level[seg.level] = seg.id
+        last_at_level[seg.level] = seg.uuid
 
     payloads = []
     for segment in segments:
-        next_seg_id = next_segment_by_level[segment.level][segment.id]
+        next_seg_id = next_segment_by_level[segment.level][segment.uuid]
         payloads.append(
             {
-                "id": str(segment.id),
+                "uuid": str(segment.uuid),
                 "index": segment.index,
                 "level": segment.level,
                 "next_segment_id": str(next_seg_id) if next_seg_id else None,
-                "parent_segment_id": str(parent_segment_id[segment.id])
-                if parent_segment_id[segment.id]
+                "parent_segment_id": str(parent_segment_id[segment.uuid])
+                if parent_segment_id[segment.uuid]
                 else None,
             }
         )
@@ -56,20 +56,21 @@ def build_chunk_nodes_payload(document: Document, chunks: list[Chunk]) -> list[d
     all_chunks: list[Chunk] = []
     for seg in segments:
         all_chunks.extend(
-            sorted(chunks_by_segment.get(seg.id, []), key=lambda c: c.chunk_index)
+            sorted(chunks_by_segment.get(seg.uuid, []), key=lambda c: c.chunk_index)
         )
     next_chunk_id: dict[UUID, UUID | None] = {
-        c.id: all_chunks[i + 1].id if i + 1 < len(all_chunks) else None
+        c.uuid: all_chunks[i + 1].uuid if i + 1 < len(all_chunks) else None
         for i, c in enumerate(all_chunks)
     }
 
     return [
         {
-            "id": str(c.id),
+            "uuid": str(c.uuid),
             "chunk_index": c.chunk_index,
             "text": c.text,
             "segment_id": str(c.segment_id),
-            "next_chunk_id": str(next_chunk_id[c.id]) if next_chunk_id[c.id] else None,
+            "next_chunk_id": str(next_chunk_id[c.uuid]) if next_chunk_id[c.uuid] else None,
         }
         for c in all_chunks
     ]
+ 

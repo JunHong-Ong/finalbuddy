@@ -14,4 +14,4 @@ def _run_flashtext_layer(chunk: Chunk) -> list[Entity]:
 
 def run_pipeline(chunk: Chunk) -> ExtractionResult:
     entities = _run_flashtext_layer(chunk)
-    return ExtractionResult(chunk_id=chunk.id, entities=entities)
+    return ExtractionResult(chunk_id=chunk.uuid, entities=entities)

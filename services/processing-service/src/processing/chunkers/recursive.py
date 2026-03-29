@@ -46,7 +46,7 @@ class RecursiveChunker(BaseChunker):
             for index, text in enumerate(texts):
                 chunks.append(
                     Chunk(
-                        document_id=document.id,
+                        document_id=document.uuid,
                         section_title=section_title,
                         chunk_index=index,
                         text=text,

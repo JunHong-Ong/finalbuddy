@@ -16,15 +16,28 @@ async def list_keywords() -> list[Keyword]:
                 """
                 MATCH (k:Keyword)
                 RETURN
-                    k.id AS kw_id,
-                    k.display_name AS name
+                    k.uuid AS uuid,
+                    k.created_at AS created_at,
+                    k.updated_at AS updated_at,
+                    k.display_name AS display_name,
+                    k.openalex_id AS openalex_id,
+                    k.cited_by_count AS cited_by_count,
+                    k.works_count AS works_count
                 """
             )
             records = await result.data()
     except Neo4jError as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch keywords: {e}")
     return [
-        Keyword(id=r["kw_id"], display_name=r["name"])
+        Keyword(
+            uuid=r["uuid"],
+            created_at=r["created_at"].to_native(),
+            updated_at=r["updated_at"].to_native(),
+            openalex_id=r["openalex_id"],
+            display_name=r["display_name"],
+            works_count=r["works_count"],
+            cited_by_count=r["cited_by_count"],
+        )
         for r in records
     ]
 

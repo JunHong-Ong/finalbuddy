@@ -30,7 +30,7 @@ class RecursiveChunker(BaseChunker):
             if text_parts:
                 chunks = _splitter.split_text("\n".join(text_parts))
                 if chunks:
-                    results.append((segment.id, chunks))
+                    results.append((segment.uuid, chunks))
 
         return results
 
@@ -40,7 +40,7 @@ class RecursiveChunker(BaseChunker):
             for index, text in enumerate(texts):
                 chunks.append(
                     Chunk(
-                        document_id=document.id,
+                        document_id=document.uuid,
                         segment_id=segment_id,
                         chunk_index=index,
                         text=text,

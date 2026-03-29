@@ -24,7 +24,7 @@ async def poll_unprocessed_chunks(client: httpx.AsyncClient) -> None:
             response.raise_for_status()
 
             for chunk_data in response.json():
-                chunk_id = chunk_data["id"]
+                chunk_id = chunk_data["uuid"]
                 try:
                     chunk = Chunk(**chunk_data)
                     extraction_result = run_pipeline(chunk)

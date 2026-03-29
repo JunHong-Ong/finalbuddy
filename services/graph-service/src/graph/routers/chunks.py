@@ -20,7 +20,7 @@ async def get_chunks(processed: bool | None = None) -> list[Chunk]:
                     """
                     MATCH (d:Document)-[:HAS_SEGMENT]->
                         (s:Segment)-[:HAS_CHUNK]->(c:Chunk)
-                    RETURN c, s.id AS segment_id, d.id AS document_id
+                    RETURN c, s.uuid AS segment_id, d.uuid AS document_id
                     """
                 )
             else:
@@ -29,7 +29,7 @@ async def get_chunks(processed: bool | None = None) -> list[Chunk]:
                     MATCH (d:Document)-[:HAS_SEGMENT]->
                         (s:Segment)-[:HAS_CHUNK]->(c:Chunk)
                     WHERE c.processed = $processed
-                    RETURN c, s.id AS segment_id, d.id AS document_id
+                    RETURN c, s.uuid AS segment_id, d.uuid AS document_id
                     """,
                     processed=processed,
                 )
@@ -39,7 +39,7 @@ async def get_chunks(processed: bool | None = None) -> list[Chunk]:
 
     return [
         Chunk(
-            id=r["c"]["id"],
+            uuid=r["c"]["uuid"],
             document_id=r["document_id"],
             segment_id=r["segment_id"],
             chunk_index=r["c"]["chunk_index"],
@@ -57,8 +57,8 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
         async with driver.session() as session:
             chunk_record = await (
                 await session.run(
-                    "MATCH (c:Chunk {id: $id}) RETURN c",
-                    id=str(chunk_id),
+                    "MATCH (c:Chunk {uuid: $uuid}) RETURN c",
+                    uuid=str(chunk_id),
                 )
             ).single()
             if chunk_record is None:
@@ -68,9 +68,9 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
 
             await session.run(
                 """
-                MATCH (c:Chunk {id: $chunk_id})
+                MATCH (c:Chunk {uuid: $chunk_id})
                 UNWIND $entities AS e
-                  MATCH (k:Keyword {id: e.keyword_id})
+                  MATCH (k:Keyword {uuid: e.keyword_id})
                   MERGE (k)-[:MENTIONED_IN]->(c)
                 """,
                 chunk_id=str(chunk_id),
@@ -82,8 +82,8 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
                 UNWIND entities AS e1
                 UNWIND entities AS e2
                 WITH e1, e2 WHERE e1.keyword_id < e2.keyword_id
-                MATCH (k1:Keyword {id: e1.keyword_id})
-                MATCH (k2:Keyword {id: e2.keyword_id})
+                MATCH (k1:Keyword {uuid: e1.keyword_id})
+                MATCH (k2:Keyword {uuid: e2.keyword_id})
                 MERGE (k1)-[r:CO_OCCURS_WITH]-(k2)
                 ON CREATE SET r.count = 1
                 ON MATCH SET r.count = r.count + 1
@@ -92,10 +92,10 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
             )
             await session.run(
                 """
-                MATCH (c:Chunk {id: $id})
+                MATCH (c:Chunk {uuid: $uuid})
                 SET c.processed = true, c.updated_at = datetime()
                 """,
-                id=str(chunk_id),
+                uuid=str(chunk_id),
             )
     except HTTPException:
         raise
