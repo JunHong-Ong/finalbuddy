@@ -65,7 +65,7 @@ class ChunkNode(BaseNode):
 # ---------------------------------------------------------------------------
 
 
-class OpenAlexNode(BaseModel):
+class OpenAlexNode(BaseNode):
     openalex_id: str
     display_name: str
     description: str | None = None
@@ -75,7 +75,7 @@ class OpenAlexNode(BaseModel):
     cited_by_count: int
 
 
-class Domain(BaseNode, OpenAlexNode):
+class Domain(OpenAlexNode):
     """
     Top-level classification (e.g. 'Physical Sciences').
     
