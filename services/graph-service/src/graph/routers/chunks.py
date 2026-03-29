@@ -78,6 +78,20 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
             )
             await session.run(
                 """
+                WITH $entities AS entities
+                UNWIND entities AS e1
+                UNWIND entities AS e2
+                WITH e1, e2 WHERE e1.keyword_id < e2.keyword_id
+                MATCH (k1:Keyword {id: e1.keyword_id})
+                MATCH (k2:Keyword {id: e2.keyword_id})
+                MERGE (k1)-[r:CO_OCCURS_WITH]-(k2)
+                ON CREATE SET r.count = 1
+                ON MATCH SET r.count = r.count + 1
+                """,
+                entities=entities,
+            )
+            await session.run(
+                """
                 MATCH (c:Chunk {id: $id})
                 SET c.processed = true, c.updated_at = datetime()
                 """,
