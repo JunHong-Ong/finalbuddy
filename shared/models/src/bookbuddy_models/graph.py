@@ -56,6 +56,7 @@ class ChunkNode(BaseNode):
 
     chunk_index: int
     processed: bool
+    embedding: list[float]
     text: str
 
 

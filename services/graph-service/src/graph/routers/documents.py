@@ -6,6 +6,7 @@ from neo4j.exceptions import Neo4jError
 from pydantic import BaseModel
 
 from graph.db import get_driver
+from graph.embedder import embed
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -206,6 +207,7 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
             "id": str(c.id),
             "chunk_index": c.chunk_index,
             "text": c.text,
+            "embedding": embed(c.text),
             "segment_id": str(c.segment_id),
             "next_chunk_id": str(c.next_chunk_id) if c.next_chunk_id else None,
         }
@@ -220,6 +222,7 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
                   ON CREATE SET
                       c.chunk_index = ch.chunk_index,
                       c.text        = ch.text,
+                      c.embedding   = ch.embedding,
                       c.processed   = false,
                       c.created_at  = datetime(),
                       c.updated_at  = datetime()
