@@ -1,0 +1,54 @@
+from collections import defaultdict
+
+from fastapi import APIRouter, HTTPException
+from openai import OpenAIError
+from pydantic import BaseModel
+
+from inference.client import get_client
+from inference.config import GENERATION_MODEL
+from inference.graph_client import SearchResult, search_chunks
+from inference.prompts import load_system_prompt
+
+router = APIRouter(prefix="/plan", tags=["plan"])
+
+_system_prompt = load_system_prompt("plan")
+
+
+class PlanRequest(BaseModel):
+    topic: str
+    top_k: int = 10
+
+
+class PlanResponse(BaseModel):
+    plan: str
+    sources: list[SearchResult]
+
+
+@router.post("", response_model=PlanResponse)
+async def generate_plan(request: PlanRequest) -> PlanResponse:
+    sources = await search_chunks(request.topic, top_k=request.top_k)
+
+    # Group chunks by document for richer context
+    by_doc: dict[str, list[SearchResult]] = defaultdict(list)
+    for r in sources:
+        by_doc[r.document_id].append(r)
+
+    context_sections = []
+    for doc_idx, (doc_id, chunks) in enumerate(by_doc.items(), 1):
+        passages = "\n".join(f"  - {c.text}" for c in chunks)
+        context_sections.append(f"[Document {doc_idx} | id: {doc_id}]\n{passages}")
+    context = "\n\n".join(context_sections)
+
+    user_input = f"Topic: {request.topic}\n\nSource material:\n{context}"
+
+    client = await get_client()
+    try:
+        response = await client.responses.create(
+            model=GENERATION_MODEL,
+            instructions=_system_prompt,
+            input=user_input,
+        )
+    except OpenAIError as e:
+        raise HTTPException(status_code=502, detail=f"Generation failed: {e}")
+
+    return PlanResponse(plan=response.output_text, sources=sources)

@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from graph.config import settings
 from graph.db import close_driver, get_driver
 from graph.embedder import load_embedder
-from graph.routers import chunks, documents, health, keywords
+from graph.routers import chunks, documents, health, keywords, search
 
 
 @asynccontextmanager
@@ -22,6 +22,7 @@ app.include_router(health.router)
 app.include_router(documents.router)
 app.include_router(keywords.router)
 app.include_router(chunks.router)
+app.include_router(search.router)
 
 
 def main():

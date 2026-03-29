@@ -5,7 +5,7 @@ from fastapi import FastAPI
 
 from inference.client import close_client, get_client
 from inference.config import settings
-from inference.routers import generation, health
+from inference.routers import ask, generation, health, plan, synth
 
 
 @asynccontextmanager
@@ -18,6 +18,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="inference-service", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(generation.router)
+app.include_router(ask.router)
+app.include_router(plan.router)
+app.include_router(synth.router)
 
 
 def main():

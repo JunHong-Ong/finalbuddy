@@ -16,7 +16,14 @@ class Settings(BaseSettings):
     inference_host: str
     inference_port: int
 
+    graph_host: str
+    graph_port: int
+
     prompts_dir: Path = Path("prompts")
+
+    @property
+    def graph_url(self) -> str:
+        return f"http://{self.graph_host}:{self.graph_port}"
 
 
 settings = Settings()
