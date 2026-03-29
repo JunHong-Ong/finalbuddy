@@ -4,7 +4,11 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "bookbuddy-models",
+    "fastapi[standard]>=0.135.2",
+    "flashtext>=2.7",
+    "httpx>=0.28.1",
     "inference-service",
+    "pydantic-settings>=2.13.1",
 ]
 
 [tool.uv.sources]
