@@ -14,16 +14,19 @@ async def list_keywords() -> list[Keyword]:
         async with driver.session() as session:
             result = await session.run(
                 """
-                MATCH (k:Keyword)<-[:SYNONYM_FOR]-(a:Alias)
+                MATCH (k:Keyword)
                 RETURN
-                    k.display_name AS name,
-                    a.display_name AS aliases
+                    k.id AS kw_id,
+                    k.display_name AS name
                 """
             )
             records = await result.data()
     except Neo4jError as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch keywords: {e}")
-    return [Keyword(name=r["name"], aliases=r["aliases"] or []) for r in records]
+    return [
+        Keyword(id=r["kw_id"], display_name=r["name"])
+        for r in records
+    ]
 
 
 @router.post("", status_code=201)

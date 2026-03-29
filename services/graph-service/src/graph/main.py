@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from graph.config import settings
 from graph.db import close_driver, get_driver
 from graph.embedder import load_embedder
-from graph.routers import documents, health, keywords
+from graph.routers import chunks, documents, health, keywords
 
 
 @asynccontextmanager
@@ -21,6 +21,7 @@ app = FastAPI(title="graph-service", lifespan=lifespan)
 app.include_router(health.router)
 app.include_router(documents.router)
 app.include_router(keywords.router)
+app.include_router(chunks.router)
 
 
 def main():

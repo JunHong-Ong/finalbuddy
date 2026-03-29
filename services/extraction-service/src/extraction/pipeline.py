@@ -7,8 +7,8 @@ def _run_flashtext_layer(chunk: Chunk) -> list[Entity]:
     processor = get_processor()
     matches = processor.extract_keywords(chunk.text, span_info=True)
     return [
-        Entity(keyword=keyword, span=chunk.text[start:end], start=start, end=end)
-        for keyword, start, end in matches
+        Entity(keyword_id=keyword_id, span=chunk.text[start:end], start=start, end=end)
+        for keyword_id, start, end in matches
     ]
 
 

@@ -9,7 +9,7 @@ class Keyword(BaseModel):
 
 
 class Entity(BaseModel):
-    keyword: str
+    keyword_id: UUID
     span: str
     start: int
     end: int

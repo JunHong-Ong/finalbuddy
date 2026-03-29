@@ -1,0 +1,89 @@
+from uuid import UUID
+
+from bookbuddy_models import Chunk
+from bookbuddy_models.extraction import ExtractionResult
+from fastapi import APIRouter, HTTPException
+from neo4j.exceptions import Neo4jError
+
+from graph.db import get_driver
+
+router = APIRouter(prefix="/chunks", tags=["chunks"])
+
+
+@router.get("")
+async def get_chunks(processed: bool | None = None) -> list[Chunk]:
+    driver = await get_driver()
+    try:
+        async with driver.session() as session:
+            if processed is None:
+                result = await session.run(
+                    """
+                    MATCH (d:Document)-[:HAS_SEGMENT]->
+                        (s:Segment)-[:HAS_CHUNK]->(c:Chunk)
+                    RETURN c, s.id AS segment_id, d.id AS document_id
+                    """
+                )
+            else:
+                result = await session.run(
+                    """
+                    MATCH (d:Document)-[:HAS_SEGMENT]->
+                        (s:Segment)-[:HAS_CHUNK]->(c:Chunk)
+                    WHERE c.processed = $processed
+                    RETURN c, s.id AS segment_id, d.id AS document_id
+                    """,
+                    processed=processed,
+                )
+            records = await result.data()
+    except Neo4jError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch chunks: {e}")
+
+    return [
+        Chunk(
+            id=r["c"]["id"],
+            document_id=r["document_id"],
+            segment_id=r["segment_id"],
+            chunk_index=r["c"]["chunk_index"],
+            text=r["c"]["text"],
+        )
+        for r in records
+    ]
+
+
+@router.post("/{chunk_id}/mentions", status_code=204)
+async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
+    driver = await get_driver()
+    entities = [{"keyword_id": str(e.keyword_id)} for e in result.entities]
+    try:
+        async with driver.session() as session:
+            chunk_record = await (
+                await session.run(
+                    "MATCH (c:Chunk {id: $id}) RETURN c",
+                    id=str(chunk_id),
+                )
+            ).single()
+            if chunk_record is None:
+                raise HTTPException(
+                    status_code=404, detail=f"Chunk {chunk_id} not found"
+                )
+
+            await session.run(
+                """
+                MATCH (c:Chunk {id: $chunk_id})
+                UNWIND $entities AS e
+                  MATCH (k:Keyword {id: e.keyword_id})
+                  MERGE (k)-[:MENTIONED_IN]->(c)
+                """,
+                chunk_id=str(chunk_id),
+                entities=entities,
+            )
+            await session.run(
+                """
+                MATCH (c:Chunk {id: $id})
+                SET c.processed = true, c.updated_at = datetime()
+                """,
+                id=str(chunk_id),
+            )
+    except HTTPException:
+        raise
+    except Neo4jError as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create mentions: {e}")

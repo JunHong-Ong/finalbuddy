@@ -104,13 +104,13 @@ class Topic(OpenAlexNode):
     """
 
 
-class Keyword(BaseNode):
+class Keyword(BaseModel):
     """
     Keyword attached to a Topic.
 
     (:Keyword)-[:DESCRIBES]->(:Topic)
     """
-
+    id: UUID
     display_name: str
 
 

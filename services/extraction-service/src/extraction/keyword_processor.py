@@ -8,9 +8,7 @@ def init_processor(keywords: list[Keyword]) -> None:
     global _processor
     _processor = KeywordProcessor(case_sensitive=False)
     for kw in keywords:
-        _processor.add_keyword(kw.name)
-        for alias in kw.aliases:
-            _processor.add_keyword(alias, kw.name)
+        _processor.add_keyword(kw.display_name, kw.id)
 
 
 def get_processor() -> KeywordProcessor:

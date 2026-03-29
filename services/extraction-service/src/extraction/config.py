@@ -13,6 +13,7 @@ class Settings(BaseSettings):
 
     graph_host: str
     graph_port: int
+    poll_interval: int = 10
 
     @property
     def graph_url(self) -> str:
