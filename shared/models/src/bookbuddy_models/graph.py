@@ -35,6 +35,7 @@ class DocumentNode(BaseDocument):
     """
 
     status: str
+    total_chunks: int | None = None
 
 
 class SegmentNode(BaseSegment):

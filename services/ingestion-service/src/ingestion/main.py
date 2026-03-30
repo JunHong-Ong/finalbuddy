@@ -62,7 +62,7 @@ async def poll_queued_documents(
 
                     await client.patch(
                         f"/documents/{doc_id}",
-                        json={"status": "SUCCEEDED"},
+                        json={"status": "SUCCEEDED", "total_chunks": len(chunks)},
                     )
                     logger.info("Processed document %s: %d chunks", doc_id, len(chunks))
                 except Exception:

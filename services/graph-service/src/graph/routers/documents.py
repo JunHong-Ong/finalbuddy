@@ -29,6 +29,7 @@ class ChunkNodePayload(BaseModel):
 
 class StatusUpdate(BaseModel):
     status: str
+    total_chunks: int | None = None
 
 
 @router.post("", status_code=201)
@@ -83,6 +84,7 @@ async def get_documents(status: str | None = None) -> list[DocumentNode]:
             content_hash=r["d"]["content_hash"],
             file_type=r["d"]["file_type"],
             status=r["d"]["status"],
+            total_chunks=r["d"].get("total_chunks"),
         )
         for r in records
     ]
@@ -117,11 +119,14 @@ async def update_document_status(doc_id: UUID, update: StatusUpdate) -> None:
             result = await session.run(
                 """
                 MATCH (d:Document {uuid: $uuid})
-                SET d.status = $status, d.updated_at = datetime()
+                SET d.status = $status,
+                    d.updated_at = datetime(),
+                    d.total_chunks = coalesce($total_chunks, d.total_chunks)
                 RETURN d
                 """,
                 uuid=str(doc_id),
                 status=update.status,
+                total_chunks=update.total_chunks,
             )
             record = await result.single()
     except Neo4jError as e:
