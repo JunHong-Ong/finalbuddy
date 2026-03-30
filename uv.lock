@@ -291,6 +291,7 @@ dependencies = [
     { name = "inference-service" },
     { name = "pydantic-settings" },
     { name = "pyyaml" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -303,6 +304,7 @@ requires-dist = [
     { name = "inference-service", editable = "services/inference-service" },
     { name = "pydantic-settings", specifier = ">=2.13.1" },
     { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "requests", specifier = ">=2.33.0" },
 ]
 
 [[package]]
