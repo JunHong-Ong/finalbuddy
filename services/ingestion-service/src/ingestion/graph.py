@@ -67,6 +67,7 @@ def build_chunk_nodes_payload(document: Document, chunks: list[Chunk]) -> list[d
         {
             "uuid": str(c.uuid),
             "chunk_index": c.chunk_index,
+            "chunk_position": c.chunk_position,
             "text": c.text,
             "segment_id": str(c.segment_id),
             "next_chunk_id": str(next_chunk_id[c.uuid]) if next_chunk_id[c.uuid] else None,

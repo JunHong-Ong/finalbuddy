@@ -22,6 +22,7 @@ class SegmentNodePayload(BaseModel):
 class ChunkNodePayload(BaseModel):
     uuid: UUID
     chunk_index: int
+    chunk_position: float
     text: str
     segment_id: UUID
     next_chunk_id: UUID | None
@@ -211,6 +212,7 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
         {
             "uuid": str(c.uuid),
             "chunk_index": c.chunk_index,
+            "chunk_position": c.chunk_position,
             "text": c.text,
             "embedding": embed(c.text),
             "segment_id": str(c.segment_id),
@@ -225,12 +227,13 @@ async def create_chunks(doc_id: UUID, chunks: list[ChunkNodePayload]) -> None:
                 UNWIND $chunks AS ch
                   MERGE (c:Chunk {uuid: ch.uuid})
                   ON CREATE SET
-                      c.chunk_index = ch.chunk_index,
-                      c.text        = ch.text,
-                      c.embedding   = ch.embedding,
-                      c.processed   = false,
-                      c.created_at  = datetime(),
-                      c.updated_at  = datetime()
+                      c.chunk_index    = ch.chunk_index,
+                      c.chunk_position = ch.chunk_position,
+                      c.text           = ch.text,
+                      c.embedding      = ch.embedding,
+                      c.processed      = false,
+                      c.created_at     = datetime(),
+                      c.updated_at     = datetime()
                   WITH c, ch
                   MATCH (s:Segment {uuid: ch.segment_id})
                   MERGE (s)-[:HAS_CHUNK]->(c)

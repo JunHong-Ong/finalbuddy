@@ -8,4 +8,5 @@ class Chunk(BaseModel):
     document_id: UUID
     segment_id: UUID
     chunk_index: int
+    chunk_position: float
     text: str
