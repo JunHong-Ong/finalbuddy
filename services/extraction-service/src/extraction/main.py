@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from extraction.client import fetch_keywords
 from extraction.config import settings
+from extraction.gliner import init_gliner
 from extraction.keyword_processor import init_processor
 from extraction.pipeline import run_pipeline
 from extraction.routers import extract, health
@@ -53,6 +54,7 @@ async def poll_unprocessed_chunks(client: httpx.AsyncClient) -> None:
 async def lifespan(app: FastAPI):
     keywords = await fetch_keywords()
     init_processor(keywords)
+    init_gliner()
 
     async with httpx.AsyncClient(base_url=settings.graph_url) as client:
         poll_task = asyncio.create_task(poll_unprocessed_chunks(client))
