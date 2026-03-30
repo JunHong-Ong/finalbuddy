@@ -1,0 +1,16 @@
+- label: Field of Study
+  description: "A broad branch of knowledge, a department, or a specialized discipline (e.g., Statistics, Medicine, Jurisprudence, Macroeconomics)."
+- label: Methodology
+  description: "A specific process, algorithm, technique, or standardized way of performing a task (e.g., Logistic Regression, Integration, Ethnography, Titration)."
+- label: Fundamental Principle
+  description: "A law, axiom, or core rule that explains how a system or phenomenon works (e.g., Torque, Supply and Demand, Natural Selection, Occam's Razor)."
+- label: Theoretical Framework
+  description: "A named school of thought, a specific theory, or a conceptual lens used for analysis (e.g., Game Theory, Constructivism, General Relativity, Keynesianism)."
+- label: Abstract Entity
+  description: "A fundamental building block, structure, or object defined within a field (e.g., Matrix, Molecule, Phoneme, Social Contract, Asset Class)."
+- label: Analytical Metric
+  description: "A specific property, variable, or quantifiable attribute used to describe a system (e.g., Entropy, GDP, pH Level, Reynolds Number, P-value)."
+- label: Academic Object
+  description: "Mathematical structures, statistical entities, or named constructs used as inputs or outputs."
+- label: Procedural Concept
+  description: "Computational methods, algorithms, or step-by-step techniques applied to data"
