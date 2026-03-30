@@ -13,28 +13,31 @@ _MENTION_LAMBDA = 2.0
 
 
 @router.get("")
-async def get_chunks(processed: bool | None = None) -> list[Chunk]:
+async def get_chunks(
+    processed: bool | None = None,
+    limit: int | None = 10,
+) -> list[Chunk]:
     driver = await get_driver()
+
+    base_query = """
+        MATCH (d:Document)-[:HAS_SEGMENT]->
+            (s:Segment)-[:HAS_CHUNK]->(c:Chunk)
+        {where}
+        RETURN c, s.uuid AS segment_id, d.uuid AS document_id
+        {limit}
+    """
+    where_clause = "WHERE c.processed = $processed" if processed is not None else ""
+    limit_clause = "LIMIT $limit" if limit is not None else ""
+    query = base_query.format(where=where_clause, limit=limit_clause)
+    params: dict = {}
+    if processed is not None:
+        params["processed"] = processed
+    if limit is not None:
+        params["limit"] = limit
+
     try:
         async with driver.session() as session:
-            if processed is None:
-                result = await session.run(
-                    """
-                    MATCH (d:Document)-[:HAS_SEGMENT]->
-                        (s:Segment)-[:HAS_CHUNK]->(c:Chunk)
-                    RETURN c, s.uuid AS segment_id, d.uuid AS document_id
-                    """
-                )
-            else:
-                result = await session.run(
-                    """
-                    MATCH (d:Document)-[:HAS_SEGMENT]->
-                        (s:Segment)-[:HAS_CHUNK]->(c:Chunk)
-                    WHERE c.processed = $processed
-                    RETURN c, s.uuid AS segment_id, d.uuid AS document_id
-                    """,
-                    processed=processed,
-                )
+            result = await session.run(query, params)
             records = await result.data()
     except Neo4jError as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch chunks: {e}")
@@ -77,7 +80,11 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
                   MERGE (k)-[r:MENTIONED_IN]->(c)
                   SET r.weight = exp(-$lambda * c.chunk_position)
                 """,
-                {"chunk_id": str(chunk_id), "entities": entities, "lambda": _MENTION_LAMBDA},
+                {
+                    "chunk_id": str(chunk_id),
+                    "entities": entities,
+                    "lambda": _MENTION_LAMBDA,
+                },
             )
             await session.run(
                 """

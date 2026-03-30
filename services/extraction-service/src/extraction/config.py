@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     graph_host: str
     graph_port: int
     poll_interval: int = 10
+    batch_size: int = 32
 
     @property
     def graph_url(self) -> str:

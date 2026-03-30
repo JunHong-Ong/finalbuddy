@@ -21,7 +21,10 @@ async def poll_unprocessed_chunks(client: httpx.AsyncClient) -> None:
     while True:
         await asyncio.sleep(settings.poll_interval)
         try:
-            response = await client.get("/chunks", params={"processed": "false"})
+            response = await client.get(
+                "/chunks",
+                params={"processed": "false", "limit": settings.batch_size},
+            )
             response.raise_for_status()
 
             for chunk_data in response.json():
