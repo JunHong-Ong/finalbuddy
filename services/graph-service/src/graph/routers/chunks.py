@@ -9,6 +9,8 @@ from graph.db import get_driver
 
 router = APIRouter(prefix="/chunks", tags=["chunks"])
 
+_MENTION_LAMBDA = 2.0
+
 
 @router.get("")
 async def get_chunks(processed: bool | None = None) -> list[Chunk]:
@@ -43,6 +45,7 @@ async def get_chunks(processed: bool | None = None) -> list[Chunk]:
             document_id=r["document_id"],
             segment_id=r["segment_id"],
             chunk_index=r["c"]["chunk_index"],
+            chunk_position=r["c"]["chunk_position"],
             text=r["c"]["text"],
         )
         for r in records
@@ -71,10 +74,10 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
                 MATCH (c:Chunk {uuid: $chunk_id})
                 UNWIND $entities AS e
                   MATCH (k:Keyword {uuid: e.keyword_id})
-                  MERGE (k)-[:MENTIONED_IN]->(c)
+                  MERGE (k)-[r:MENTIONED_IN]->(c)
+                  SET r.weight = exp(-$lambda * c.chunk_position)
                 """,
-                chunk_id=str(chunk_id),
-                entities=entities,
+                {"chunk_id": str(chunk_id), "entities": entities, "lambda": _MENTION_LAMBDA},
             )
             await session.run(
                 """
