@@ -18,7 +18,6 @@ from pathlib import Path
 
 from neo4j import GraphDatabase
 
-
 BATCH_SIZE = 10000
 
 
@@ -78,8 +77,28 @@ def create_indexes(session) -> None:
     print("Creating indexes...")
     for name, label, field in INDEXES:
         session.run(
-            f"CREATE INDEX `{name}` IF NOT EXISTS "
-            f"FOR (n:`{label}`) ON (n.`{field}`)"
+            f"CREATE INDEX `{name}` IF NOT EXISTS FOR (n:`{label}`) ON (n.`{field}`)"
+        )
+        print(f"  {name} — OK")
+
+
+VECTOR_INDEXES = [
+    ("embeddings_Chunk", "Chunk", "embedding"),
+]
+
+
+def create_vector_indexes(session) -> None:
+    print("Creating vector indexes...")
+    for name, label, field in VECTOR_INDEXES:
+        session.run(
+            f"CREATE VECTOR INDEX `{name}` IF NOT EXISTS "
+            f"FOR (n:`{label}`) ON (n.`{field}`) "
+            "OPTIONS {{"
+            "    indexConfig: {{"
+            "        `vector.dimensions`: 384,"
+            "        `vector.similarity_function`: 'cosine'"
+            "    }}"
+            "}}"
         )
         print(f"  {name} — OK")
 
@@ -88,7 +107,10 @@ def create_indexes(session) -> None:
 # Node loaders
 # ---------------------------------------------------------------------------
 
-def _run_node_batch(session, query: str, rows: list[dict], csv_path: Path, batch_size: int) -> None:
+
+def _run_node_batch(
+    session, query: str, rows: list[dict], csv_path: Path, batch_size: int
+) -> None:
     total = len(rows)
     print(f"  Loading {total} rows from {csv_path.name}...")
     loaded = 0
@@ -301,7 +323,10 @@ def load_topics(session, csv_dir: Path, batch_size: int) -> None:
 # Relationship loaders
 # ---------------------------------------------------------------------------
 
-def _run_rel_batch(session, query: str, rows: list[dict], csv_path: Path, batch_size: int) -> None:
+
+def _run_rel_batch(
+    session, query: str, rows: list[dict], csv_path: Path, batch_size: int
+) -> None:
     total = len(rows)
     print(f"  Loading {total} rows from {csv_path.name}...")
     loaded = 0
@@ -339,7 +364,9 @@ def load_fields_has_subfield(session, csv_dir: Path, batch_size: int) -> None:
     MATCH (target:`Subfield` {openalex_id: row.target_id})
     MERGE (source)-[r:`HAS_SUBFIELD`]->(target)
     """
-    _run_rel_batch(session, query, rows, csv_dir / "fields_has_subfield.csv", batch_size)
+    _run_rel_batch(
+        session, query, rows, csv_dir / "fields_has_subfield.csv", batch_size
+    )
 
 
 def load_subfields_has_topic(session, csv_dir: Path, batch_size: int) -> None:
@@ -354,7 +381,9 @@ def load_subfields_has_topic(session, csv_dir: Path, batch_size: int) -> None:
     MATCH (target:`Topic`    {openalex_id: row.target_id})
     MERGE (source)-[r:`HAS_TOPIC`]->(target)
     """
-    _run_rel_batch(session, query, rows, csv_dir / "subfields_has_topic.csv", batch_size)
+    _run_rel_batch(
+        session, query, rows, csv_dir / "subfields_has_topic.csv", batch_size
+    )
 
 
 def load_topics_has_keyword(session, csv_dir: Path, batch_size: int) -> None:
@@ -375,6 +404,7 @@ def load_topics_has_keyword(session, csv_dir: Path, batch_size: int) -> None:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
