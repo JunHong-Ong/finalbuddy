@@ -36,14 +36,16 @@ class RecursiveChunker(BaseChunker):
 
     def map(self, document: Document, raw: list[tuple[UUID, list[str]]]) -> list[Chunk]:
         chunks: list[Chunk] = []
+        global_index = 0
         for segment_id, texts in raw:
-            for index, text in enumerate(texts):
+            for text in texts:
                 chunks.append(
                     Chunk(
                         document_id=document.uuid,
                         segment_id=segment_id,
-                        chunk_index=index,
+                        chunk_index=global_index,
                         text=text,
                     )
                 )
+                global_index += 1
         return chunks
