@@ -15,6 +15,9 @@ dependencies = [
 bookbuddy-models = { workspace = true }
 inference-service = { workspace = true }
 
+[project.scripts]
+extraction-service = "extraction.main:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

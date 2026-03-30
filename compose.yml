@@ -1,0 +1,113 @@
+services:
+  extraction-service:
+    build:
+      context: .
+      dockerfile: services/extraction-service/Dockerfile
+    ports:
+      - 8001:8000
+    environment:
+      - EXTRACTION_HOST=0.0.0.0
+      - EXTRACTION_PORT=8000
+      - GRAPH_HOST=graph-service
+      - GRAPH_PORT=8000
+    volumes:
+      - ./services/extraction-service/src:/app/services/extraction-service/src
+    depends_on:
+      - graph-service
+    networks:
+      - backend
+
+  graph-service:
+    build:
+      context: .
+      dockerfile: services/graph-service/Dockerfile
+    ports:
+      - 8002:8000
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - GRAPH_HOST=0.0.0.0
+      - GRAPH_PORT=8000
+      - HF_HOME=/app/hf_cache
+    volumes:
+      - ./services/graph-service/src:/app/services/graph-service/src
+      - ./hf_cache:/app/hf_cache
+    depends_on:
+      - neo4j
+    networks:
+      - backend
+
+  inference-service:
+    build:
+      context: .
+      dockerfile: services/inference-service/Dockerfile
+    ports:
+      - 8003:8000
+    environment:
+      - LLM_BASE_URL=http://ollama:11434/v1
+      - LLM_API_KEY=${LLM_API_KEY}
+      - INFERENCE_HOST=0.0.0.0
+      - INFERENCE_PORT=8000
+      - GRAPH_HOST=graph-service
+      - GRAPH_PORT=8000
+    volumes:
+      - ./services/inference-service/src:/app/services/inference-service/src
+      - ./services/inference-service/prompts:/app/prompts
+    depends_on:
+      - graph-service
+      - ollama
+    networks:
+      - backend
+      - frontend
+
+  ingestion-service:
+    build:
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
+    ports:
+      - 8004:8000
+    environment:
+      - INGESTION_HOST=0.0.0.0
+      - INGESTION_PORT=8000
+      - GRAPH_HOST=graph-service
+      - GRAPH_PORT=8000
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - ./services/ingestion-service/src:/app/services/ingestion-service/src
+    depends_on:
+      - graph-service
+    networks:
+      - backend
+      - frontend
+
+  neo4j:
+    image: neo4j:2026.02.2
+    ports:
+      - 7474:7474
+      - 7687:7687
+    restart: always
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_PASSWORD}
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - backend
+
+  ollama:
+    image: ollama/ollama:0.19.0-rc2
+    ports:
+      - 11434:11434
+    restart: always
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - backend
+
+volumes:
+  neo4j_data:
+  ollama_data:
+
+networks:
+  backend:
+  frontend:
