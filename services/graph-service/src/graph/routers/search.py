@@ -29,7 +29,7 @@ async def search_chunks(request: SearchRequest) -> list[SearchResult]:
         async with driver.session() as session:
             result = await session.run(
                 """
-                CALL db.index.vector.queryNodes('chunk-embeddings', $top_k, $embedding)
+                CALL db.index.vector.queryNodes('embeddings_Chunk', $top_k, $embedding)
                 YIELD node AS c, score
                 MATCH (d:Document)-[:HAS_SEGMENT]->(s:Segment)-[:HAS_CHUNK]->(c)
                 RETURN c.uuid AS chunk_id, c.text AS text, score,
