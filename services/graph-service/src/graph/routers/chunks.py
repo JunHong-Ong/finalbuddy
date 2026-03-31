@@ -78,7 +78,9 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
                 UNWIND $entities AS e
                   MATCH (k:Keyword {uuid: e.keyword_id})
                   MERGE (k)-[r:MENTIONED_IN]->(c)
-                  SET r.weight = exp(-$lambda * c.chunk_position)
+                  ON CREATE SET r.weight = exp(-$lambda * c.chunk_position),
+                                k.mention_count = coalesce(k.mention_count, 0) + 1
+                  ON MATCH SET  r.weight = exp(-$lambda * c.chunk_position)
                 """,
                 {
                     "chunk_id": str(chunk_id),
@@ -88,15 +90,18 @@ async def create_mentions(chunk_id: UUID, result: ExtractionResult) -> None:
             )
             await session.run(
                 """
-                WITH $entities AS entities
-                UNWIND entities AS e1
-                UNWIND entities AS e2
-                WITH e1, e2 WHERE e1.keyword_id < e2.keyword_id
-                MATCH (k1:Keyword {uuid: e1.keyword_id})
-                MATCH (k2:Keyword {uuid: e2.keyword_id})
+                UNWIND $entities AS e
+                WITH collect(DISTINCT e.keyword_id) AS keyword_ids
+                UNWIND keyword_ids AS id1
+                UNWIND keyword_ids AS id2
+                WITH id1, id2 WHERE id1 < id2
+                MATCH (k1:Keyword {uuid: id1})
+                MATCH (k2:Keyword {uuid: id2})
                 MERGE (k1)-[r:CO_OCCURS_WITH]-(k2)
                 ON CREATE SET r.count = 1
                 ON MATCH SET r.count = r.count + 1
+                WITH k1, k2, r
+                SET r.weight = toFloat(r.count) / (k1.mention_count + k2.mention_count - r.count)
                 """,
                 entities=entities,
             )
